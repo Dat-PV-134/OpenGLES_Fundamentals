@@ -31,7 +31,7 @@ class MainActivity : AppCompatActivity() {
             // Set phiên bản và Renderer cho GL SurfaceView
             // Khi set EGLContextClientVersion = 3, ta đang cho GLSurfaceView biết rằng mình sử dụng phiên bản 3.0 trở lên
             binding.myGLSurfaceView.setEGLContextClientVersion(3)
-            binding.myGLSurfaceView.setRenderer(MyRenderer())
+            binding.myGLSurfaceView.setRenderer(MyRenderer(this@MainActivity))
             rendererSet = true
         } else {
             Toast.makeText(this@MainActivity, "This device doesn't support OpenGL ES 3.2", Toast.LENGTH_SHORT).show()
