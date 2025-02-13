@@ -21,9 +21,9 @@ import javax.microedition.khronos.opengles.GL10
 class MyRenderer(private val context: Context) : Renderer {
     // Dữ liệu đỉnh
     private val vertices: FloatArray = floatArrayOf(
-        0.0f, 0.5f, 0.0f,   // z, y, z
-        -0.5f, -0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f
+        0.0f, 0.5f, 1.0f, 1.0f, 0.5f, 0.5f, 1.0f,    // z, y, z, r, g, b, a
+        -0.5f, -0.5f, 1.0f, 0.5f, 1.0f, 0.5f, 1.0f,
+        0.5f, -0.5f, 1.0f, 0.5f, 0.5f, 1.0f, 1.0f,
     )
 
     // Các biến để lưu trữ id của program, vbo và vao
@@ -33,7 +33,7 @@ class MyRenderer(private val context: Context) : Renderer {
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         // glClearColor chỉ định giá trị màu rgba cho bộ đệm màu sắc của OpenGLES
-        glClearColor(1.0f, 0.5f, 0.5f, 0f)
+//        glClearColor(1.0f, 0.5f, 0.5f, 0f)
 
         // Biên dịch và liên kết Vertex Shader và Fragment Shader vào Open GL program
         val vertexShaderSource = ShaderReader.readTextFileFromResource(context, R.raw.vertex_shader)
@@ -82,13 +82,18 @@ class MyRenderer(private val context: Context) : Renderer {
         // Xác định kiểu dữ liệu và cách thức đọc dữ liệu cho thuộc tính đỉnh có location = index
         // glVertexAttribPointer(GLuint indx, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLint offset);
         // indx: Location của thuộc tính trong VertexShader
+        // size: Số lượng đỉnh
         // type: Kiểu dữ liệu
         // normalized: true -> ánh xạ dữ liệu kiểu số nguyên sang phạm vi [-1, 1] và [0, 1] nếu là kiểu số nguyên ko dấu
         // stride: Số bytes cách nhau giữa 2 đỉnh
-        // offset: Vị trí bắt đầu đọc dữ liệu
-        GLES32.glVertexAttribPointer(0, 3, GLES32.GL_FLOAT, false, 3 * Float.SIZE_BYTES, 0)
+        // offset: Khoảng cách để đọc dữ liệu tính từ điểm bắt đầu (Tính bằng byte)
+        GLES32.glVertexAttribPointer(0, 3, GLES32.GL_FLOAT, false, 7 * Float.SIZE_BYTES, 0)
         // Bật thuộc tính đỉnh có location = index để sử dụng
         GLES32.glEnableVertexAttribArray(0)
+
+        // Tương tự, xác định kiểu dữ liệu và cách thức đọc dữ liệu cho thuộc tính màu sắc
+        GLES32.glVertexAttribPointer(1, 3, GLES32.GL_FLOAT, false, 7 * Float.SIZE_BYTES, 3 * Float.SIZE_BYTES)
+        GLES32.glEnableVertexAttribArray(1)
 
         // Hủy liên kết VBO và VAO khi không sử dụng nữa
         // 0: Hủy liên kết tất cả buffer đc liên kết trước đó
