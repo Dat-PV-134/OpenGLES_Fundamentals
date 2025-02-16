@@ -8,6 +8,7 @@ import android.opengl.GLES32.GL_COLOR_BUFFER_BIT
 import android.opengl.GLES32.glClear
 import android.opengl.GLES32.glViewport
 import android.opengl.GLSurfaceView.Renderer
+import android.opengl.Matrix
 import com.rekoj.opengles_fundamentals.util.LoggerConfig
 import com.rekoj.opengles_fundamentals.util.ShaderHelper
 import com.rekoj.opengles_fundamentals.util.ShaderReader
@@ -25,6 +26,9 @@ class MyRenderer(private val context: Context) : Renderer {
         -0.5f, -0.5f, 1.0f, 0.5f, 1.0f, 0.5f, 1.0f,
         0.5f, -0.5f, 1.0f, 0.5f, 0.5f, 1.0f, 1.0f,
     )
+
+    // Mảng để lưu trữ ma trận chiếu
+    private val projectionMatrix = FloatArray(16);
 
     // Các biến để lưu trữ id của program, vbo và vao
     private var program = 0
@@ -102,6 +106,26 @@ class MyRenderer(private val context: Context) : Renderer {
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
+        // Tính tỷ lệ màn hình
+        val aspectRatio = if (width > height) width.toFloat() / height else height.toFloat() / width
+
+        // Tạo ma trận chiếu trực giao
+        // Tùy vào orientation hiện tại của màn hình, đặt chiều ngắn hơn trong phạm vi [-1, 1] và chiều còn lại trong phạm vi [-aspectRatio, aspectRatio]
+        if (width > height) {
+            Matrix.orthoM(projectionMatrix, 0, -aspectRatio, aspectRatio, -1f, 1f, -1f, 1f)
+        } else {
+            Matrix.orthoM(projectionMatrix, 0, -1f, 1f, -aspectRatio, aspectRatio, -1f, 1f)
+        }
+        // Để lấy ra location của uniform hoặc attribute mà ko cần set layout trong shader, glGet....Location(tên attribute hoặc uniform)
+        val uniformLocation = GLES32.glGetUniformLocation(program, "projectionMatrix")
+        // Gán giá trị ma trận chiếu cho uniform projectionMatrix
+        // uniformLocation: Vị trí của uniform
+        // 1: Số lượng ma trận truyền vào
+        // false: Ma trận có phải là ma trận chuyển vị hay ko (tức hàng được đổi thành cột và ngược lại)
+        // projectionMatrix: Dữ liệu được truyền vào biến uniform
+        // 0: Offset để biết bắt đầu đọc dữ liệu mảng từ vị trí nào
+        GLES32.glUniformMatrix4fv(uniformLocation, 1, false, projectionMatrix, 0)
+
         // glViewport set phạm vi hiển thị của OpenGL
         glViewport(0, 0, width, height)
     }
