@@ -3,7 +3,6 @@ package com.rekoj.opengles_fundamentals
 import android.content.Context
 import android.opengl.GLES20
 import android.opengl.GLES32
-import android.opengl.GLES32.glClearColor
 import android.opengl.GLES32.GL_COLOR_BUFFER_BIT
 import android.opengl.GLES32.glClear
 import android.opengl.GLES32.glViewport
@@ -88,9 +87,9 @@ class MyRenderer(private val context: Context) : Renderer {
         // indx: Location của thuộc tính trong VertexShader
         // size: Số lượng đỉnh
         // type: Kiểu dữ liệu
-        // normalized: true -> ánh xạ dữ liệu kiểu số nguyên sang phạm vi [-1, 1] và [0, 1] nếu là kiểu số nguyên ko dấu
-        // stride: Số bytes cách nhau giữa 2 đỉnh
-        // offset: Khoảng cách để đọc dữ liệu tính từ điểm bắt đầu (Tính bằng byte)
+        // normalized: true -> Chuẩn hóa dữ liệu (tức ánh xạ dữ liệu về phạm vi [-1, 1]) tùy theo kiểu dữ liệu được set. VD: GL_INT -> giá trị các thuộc tính x, y, z, w của đỉnh = chính nó /  INT.MAX_VALUE
+        // stride: Khoảng cách (tính bằng bytes) từ vị trí bắt đầu đọc dữ liệu đỉnh đầu tiên đến đỉnh tiếp theo. VD: dữ liệu đỉnh gồm x, y, z, r, g, b, a ->  nếu kiểu dữ liệu của dữ liệu đỉnh là Float thì stride = 7 * Float.SIZE_BYTES
+        // offset: Khoảng cách (tính bằng bytes) từ vị trí đầu của mảng dữ liệu đỉnh đến vị trí bắt đầu đọc dữ liệu đỉnh
         GLES32.glVertexAttribPointer(0, 3, GLES32.GL_FLOAT, false, 7 * Float.SIZE_BYTES, 0)
         // Bật thuộc tính đỉnh có location = index để sử dụng
         GLES32.glEnableVertexAttribArray(0)
@@ -123,7 +122,7 @@ class MyRenderer(private val context: Context) : Renderer {
         // 1: Số lượng ma trận truyền vào
         // false: Ma trận có phải là ma trận chuyển vị hay ko (tức hàng được đổi thành cột và ngược lại)
         // projectionMatrix: Dữ liệu được truyền vào biến uniform
-        // 0: Offset để biết bắt đầu đọc dữ liệu mảng từ vị trí nào
+        // 0: Offset để biết bắt đầu đọc dữ liệu mảng chứa ma trận chiếu từ vị trí nào
         GLES32.glUniformMatrix4fv(uniformLocation, 1, false, projectionMatrix, 0)
 
         // glViewport set phạm vi hiển thị của OpenGL
@@ -139,7 +138,7 @@ class MyRenderer(private val context: Context) : Renderer {
         // Kết xuất các hình nguyên thủy (điểm, đường, tam giác) từ mảng dữ liệu
         // glDrawArrays(GLenum mode, GLint first, GLsizei count);
         // mode: kiểu hình nguyên thủy
-        // first: Vị trí bắt đầu của mảng dữ liệu đỉnh đã được bật
+        // first: Vị trí bắt đầu của mảng dữ liệu đỉnh đã được enable
         // count: Số lượng đỉnh được vẽ
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 3)
         // Hủy liên kết VAO khi ko dùng đến nữa
