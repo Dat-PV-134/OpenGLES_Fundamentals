@@ -1,7 +1,6 @@
 package com.rekoj.opengles_fundamentals
 
 import android.content.Context
-import android.opengl.GLES20
 import android.opengl.GLES32
 import android.opengl.GLES32.GL_COLOR_BUFFER_BIT
 import android.opengl.GLES32.glClear
@@ -21,9 +20,28 @@ import javax.microedition.khronos.opengles.GL10
 class MyRenderer(private val context: Context) : Renderer {
     // Dữ liệu đỉnh
     private val vertices: FloatArray = floatArrayOf(
-        0.0f, 0.5f, 1.0f, 1.0f, 0.5f, 0.5f, 1.0f,    // z, y, z, r, g, b, a
-        -0.5f, -0.5f, 1.0f, 0.5f, 1.0f, 0.5f, 1.0f,
-        0.5f, -0.5f, 1.0f, 0.5f, 0.5f, 1.0f, 1.0f,
+        0.5f, 0.0f, 0.0f, 0.5f, 1.0f, 0.5f, 1.0f,    // z, y, z, r, g, b, a
+        0.0f, 0.75f, 0.0f, 0.5f, 0.8f, 1.0f, 1.0f,
+        -0.5f, 0.0f, 0.0f, 0.5f, 0.5f, 1.0f, 1.0f,
+
+        0.0f, -0.75f, 0.0f, 1.0f, 0.8f, 0.5f, 1.0f,
+        0.0f, 0.0f, -0.5f, 1.0f, 0.5f, 0.5f, 1.0f,
+        0.0f, 0.0f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f
+    )
+
+    // Index của các đỉnh cần vẽ
+    private val indices: IntArray = intArrayOf(
+        0, 1, 5,
+        5, 3, 0,
+
+        5, 1, 2,
+        2, 3, 5,
+
+        4, 1, 0,
+        0, 3, 4,
+
+        4, 1, 2,
+        2, 3, 4
     )
 
     // Mảng để lưu trữ ma trận chiếu
@@ -33,6 +51,7 @@ class MyRenderer(private val context: Context) : Renderer {
     private var program = 0
     private var VBO = 0
     private var VAO = 0
+    private var EBO = 0
 
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         // glClearColor chỉ định giá trị màu rgba cho bộ đệm màu sắc của OpenGLES
@@ -48,16 +67,20 @@ class MyRenderer(private val context: Context) : Renderer {
         // Sử dụng program
         GLES32.glUseProgram(program)
 
-        // Tạo 2 biến IntBuffer để lưu trữ id của VAO và VBO
+        // Tạo 3 biến IntBuffer để lưu trữ id của VAO, VBO, EBO
         val vaoBuffer = IntBuffer.allocate(1)
         val vboBuffer = IntBuffer.allocate(1)
+        val eboBuffer = IntBuffer.allocate(1)
         // Tạo VAO và lưu id lưu id vào vaoBuffer
         GLES32.glGenVertexArrays(1, vaoBuffer)
         // Tạo VBO và lưu id lưu id vào vboBuffer
         GLES32.glGenBuffers(1, vboBuffer)
-        // Gán id của VAO và VBO vào 2 biến toàn cục đã tạo nhằm sử dụng sau
+        // Tạo EBO và lưu id lưu id vào vboBuffer
+        GLES32.glGenBuffers(1, eboBuffer)
+        // Gán id của VAO, VBO và EBO vào 3 biến toàn cục đã tạo nhằm sử dụng sau
         VAO = vaoBuffer.get(0)
         VBO = vboBuffer.get(0)
+        EBO = eboBuffer.get(0)
 
         // Liên kết VAO để bắt đầu lưu trữ cách thức truy cập cũng như dữ liệu của VBO
         GLES32.glBindVertexArray(VAO)
@@ -95,13 +118,24 @@ class MyRenderer(private val context: Context) : Renderer {
         GLES32.glEnableVertexAttribArray(0)
 
         // Tương tự, xác định kiểu dữ liệu và cách thức đọc dữ liệu cho thuộc tính màu sắc
-        GLES32.glVertexAttribPointer(1, 3, GLES32.GL_FLOAT, false, 7 * Float.SIZE_BYTES, 3 * Float.SIZE_BYTES)
+        GLES32.glVertexAttribPointer(1, 4, GLES32.GL_FLOAT, false, 7 * Float.SIZE_BYTES, 3 * Float.SIZE_BYTES)
         GLES32.glEnableVertexAttribArray(1)
+
+        // Liên kết EBO và truyền dữ liệu vào
+        val indicesBuffer: IntBuffer = ByteBuffer
+            .allocateDirect(indices.size * Int.SIZE_BYTES)
+            .order(ByteOrder.nativeOrder())
+            .asIntBuffer()
+        indicesBuffer.put(indices)
+        indicesBuffer.position(0)
+        GLES32.glBindBuffer(GLES32.GL_ELEMENT_ARRAY_BUFFER, EBO)
+        GLES32.glBufferData(GLES32.GL_ELEMENT_ARRAY_BUFFER, indices.size * Int.SIZE_BYTES, indicesBuffer, GLES32.GL_STATIC_DRAW)
 
         // Hủy liên kết VBO và VAO khi không sử dụng nữa
         // 0: Hủy liên kết tất cả buffer đc liên kết trước đó
         GLES32.glBindBuffer(GLES32.GL_ARRAY_BUFFER, 0)
         GLES32.glBindVertexArray(0)
+        GLES32.glBindBuffer(GLES32.GL_ELEMENT_ARRAY_BUFFER, 0)
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -140,7 +174,13 @@ class MyRenderer(private val context: Context) : Renderer {
         // mode: kiểu hình nguyên thủy
         // first: Vị trí bắt đầu của mảng dữ liệu đỉnh đã được enable
         // count: Số lượng đỉnh được vẽ
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 3)
+//        GLES32.glDrawArrays(GLES20.GL_TRIANGLES, 0, 3)
+        // glDrawElements(int var0, int var1, int var2, int var3);
+        // var0: kiểu hình nguyên thủy
+        // var1: Số lượng đỉnh được vẽ
+        // var2: Kiểu dữ liệu của indices
+        // var3: offset (int)
+        GLES32.glDrawElements(GLES32.GL_TRIANGLES, indices.size, GLES32.GL_UNSIGNED_INT, 0)
         // Hủy liên kết VAO khi ko dùng đến nữa
         GLES32.glBindVertexArray(0)
     }
