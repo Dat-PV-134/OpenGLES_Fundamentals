@@ -108,7 +108,7 @@ class MyRenderer(private val context: Context) : Renderer {
         // Xác định kiểu dữ liệu và cách thức đọc dữ liệu cho thuộc tính đỉnh có location = index
         // glVertexAttribPointer(GLuint indx, GLint size, GLenum type, GLboolean normalized, GLsizei stride, GLint offset);
         // indx: Location của thuộc tính trong VertexShader
-        // size: Số lượng đỉnh
+        // size: Số lượng thuộc tính truyền vào, ở case này là 3 (x, y, z)
         // type: Kiểu dữ liệu
         // normalized: true -> Chuẩn hóa dữ liệu (tức ánh xạ dữ liệu về phạm vi [-1, 1]) tùy theo kiểu dữ liệu được set. VD: GL_INT -> giá trị các thuộc tính x, y, z, w của đỉnh = chính nó /  INT.MAX_VALUE
         // stride: Khoảng cách (tính bằng bytes) từ vị trí bắt đầu đọc dữ liệu đỉnh đầu tiên đến đỉnh tiếp theo. VD: dữ liệu đỉnh gồm x, y, z, r, g, b, a ->  nếu kiểu dữ liệu của dữ liệu đỉnh là Float thì stride = 7 * Float.SIZE_BYTES
