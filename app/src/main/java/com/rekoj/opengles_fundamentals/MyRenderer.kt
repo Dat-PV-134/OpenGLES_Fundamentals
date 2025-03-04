@@ -3,7 +3,10 @@ package com.rekoj.opengles_fundamentals
 import android.content.Context
 import android.opengl.GLES32
 import android.opengl.GLES32.GL_COLOR_BUFFER_BIT
+import android.opengl.GLES32.GL_DEPTH_BUFFER_BIT
+import android.opengl.GLES32.GL_DEPTH_TEST
 import android.opengl.GLES32.glClear
+import android.opengl.GLES32.glEnable
 import android.opengl.GLES32.glViewport
 import android.opengl.GLSurfaceView.Renderer
 import android.opengl.Matrix
@@ -14,19 +17,20 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
 import java.nio.IntBuffer
+import java.util.Calendar
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
 class MyRenderer(private val context: Context) : Renderer {
     // Dữ liệu đỉnh
     private val vertices: FloatArray = floatArrayOf(
-        0.5f, 0.0f, 0.0f, 0.5f, 1.0f, 0.5f, 1.0f,    // z, y, z, r, g, b, a
+        0.5f, 0.0f, 0.0f, 0.5f, 1.0f, 0.5f, 1.0f,    // x, y, z, r, g, b, a
         0.0f, 0.75f, 0.0f, 0.5f, 0.8f, 1.0f, 1.0f,
         -0.5f, 0.0f, 0.0f, 0.5f, 0.5f, 1.0f, 1.0f,
 
         0.0f, -0.75f, 0.0f, 1.0f, 0.8f, 0.5f, 1.0f,
         0.0f, 0.0f, -0.5f, 1.0f, 0.5f, 0.5f, 1.0f,
-        0.0f, 0.0f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f
+        0.0f, 0.0f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f,
     )
 
     // Index của các đỉnh cần vẽ
@@ -45,7 +49,12 @@ class MyRenderer(private val context: Context) : Renderer {
     )
 
     // Mảng để lưu trữ ma trận chiếu
-    private val projectionMatrix = FloatArray(16);
+    private val projectionMatrix = FloatArray(16)
+    // Tương tự với ma trận biến đổi đối tượng
+    private val modelMatrix = FloatArray(16)
+
+    private var timeElapsed: Float = 0.0f
+    private var animationSpeed: Float = 0.5f
 
     // Các biến để lưu trữ id của program, vbo và vao
     private var program = 0
@@ -56,6 +65,7 @@ class MyRenderer(private val context: Context) : Renderer {
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         // glClearColor chỉ định giá trị màu rgba cho bộ đệm màu sắc của OpenGLES
 //        glClearColor(1.0f, 0.5f, 0.5f, 0f)
+        glEnable(GL_DEPTH_TEST)
 
         // Biên dịch và liên kết Vertex Shader và Fragment Shader vào Open GL program
         val vertexShaderSource = ShaderReader.readTextFileFromResource(context, R.raw.vertex_shader)
@@ -164,8 +174,31 @@ class MyRenderer(private val context: Context) : Renderer {
     }
 
     override fun onDrawFrame(gl: GL10?) {
-        // clear bộ đệm màu sắc để thay bằng màu mới đã chỉ định ở onSurfaceCreated
-        glClear(GL_COLOR_BUFFER_BIT)
+        // Clear bộ đệm màu sắc để thay bằng màu mới đã chỉ định ở onSurfaceCreated
+        // Tiện thể clear luôn bộ đệm z
+        glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
+
+        // Tăng thời gian để tạo hiệu ứng liên tục
+        timeElapsed += animationSpeed * 0.016f // Giả 60 FPS (thời gian cho mỗi khung hình là 1/60 ≈ 0,016f)
+        if (timeElapsed > 1.0f) {
+            timeElapsed -= 1.0f
+        } else if (timeElapsed < 0.0f) {
+            timeElapsed += 1.0f
+        }
+
+        // Biến đổi ma trận được truyền vào thành ma trận định danh
+        Matrix.setIdentityM(modelMatrix, 0)
+        // Biến đổi ma trận định danh thành ma trận xoay
+        // Matrix.setRotateM(float[] rm, int rmOffset, float a, float x, float y, float z)
+        // rm: Ma trận cần biến đổi
+        // rmOffset: offset để đọc ma trận
+        // a (angle): góc xoay
+        // x: Tọa độ x của điểm cuối nối với tâm đối tượng để tạo vectơ được đặt làm trục xoay
+        // y: Tọa độ y của điểm cuối nối với tâm đối tượng để tạo vectơ được đặt làm trục xoay
+        // y: Tọa độ z của điểm cuối nối với tâm đối tượng để tạo vectơ được đặt làm trục xoay
+        Matrix.setRotateM(modelMatrix, 0, timeElapsed * 360.0f, 0.0f, 1.0f, 0.0f)
+        // Set giá trị cho modelMatrix
+        GLES32.glUniformMatrix4fv(0, 1, false, modelMatrix, 0)
 
         // Liên kết VAO và vẽ tam giác
         GLES32.glBindVertexArray(VAO)

@@ -1,5 +1,6 @@
 package com.rekoj.opengles_fundamentals.util
 
+import android.opengl.GLES32
 import android.opengl.GLES32.GL_COMPILE_STATUS
 import android.opengl.GLES32.GL_FRAGMENT_SHADER
 import android.opengl.GLES32.GL_LINK_STATUS
