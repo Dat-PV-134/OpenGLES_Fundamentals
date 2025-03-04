@@ -52,6 +52,8 @@ class MyRenderer(private val context: Context) : Renderer {
     private val projectionMatrix = FloatArray(16)
     // Tương tự với ma trận biến đổi đối tượng
     private val modelMatrix = FloatArray(16)
+    private val rotationMatrix = FloatArray(16)
+    private val translateMatrix = FloatArray(16)
 
     private var timeElapsed: Float = 0.0f
     private var animationSpeed: Float = 0.5f
@@ -155,9 +157,9 @@ class MyRenderer(private val context: Context) : Renderer {
         // Tạo ma trận chiếu trực giao
         // Tùy vào orientation hiện tại của màn hình, đặt chiều ngắn hơn trong phạm vi [-1, 1] và chiều còn lại trong phạm vi [-aspectRatio, aspectRatio]
         if (width > height) {
-            Matrix.orthoM(projectionMatrix, 0, -aspectRatio, aspectRatio, -1f, 1f, -1f, 1f)
+            Matrix.orthoM(projectionMatrix, 0, -aspectRatio, aspectRatio, -1f, 1f, -2f, 2f)
         } else {
-            Matrix.orthoM(projectionMatrix, 0, -1f, 1f, -aspectRatio, aspectRatio, -1f, 1f)
+            Matrix.orthoM(projectionMatrix, 0, -1f, 1f, -aspectRatio, aspectRatio, -2f, 2f)
         }
         // Để lấy ra location của uniform hoặc attribute mà ko cần set layout trong shader, glGet....Location(tên attribute hoặc uniform)
         val uniformLocation = GLES32.glGetUniformLocation(program, "projectionMatrix")
@@ -188,6 +190,8 @@ class MyRenderer(private val context: Context) : Renderer {
 
         // Biến đổi ma trận được truyền vào thành ma trận định danh
         Matrix.setIdentityM(modelMatrix, 0)
+
+        Matrix.setIdentityM(rotationMatrix, 0)
         // Biến đổi ma trận định danh thành ma trận xoay
         // Matrix.setRotateM(float[] rm, int rmOffset, float a, float x, float y, float z)
         // rm: Ma trận cần biến đổi
@@ -196,7 +200,15 @@ class MyRenderer(private val context: Context) : Renderer {
         // x: Tọa độ x của điểm cuối nối với tâm đối tượng để tạo vectơ được đặt làm trục xoay
         // y: Tọa độ y của điểm cuối nối với tâm đối tượng để tạo vectơ được đặt làm trục xoay
         // y: Tọa độ z của điểm cuối nối với tâm đối tượng để tạo vectơ được đặt làm trục xoay
-        Matrix.setRotateM(modelMatrix, 0, timeElapsed * 360.0f, 0.0f, 1.0f, 0.0f)
+        Matrix.setRotateM(rotationMatrix, 0, timeElapsed * 360.0f, 0.0f, 1.0f, 0.0f)
+
+        // Tương tự thêm ma trận dịch chuyển
+        Matrix.setIdentityM(translateMatrix, 0)
+        Matrix.translateM(translateMatrix, 0, 0f, 0f, timeElapsed)
+
+        // Nhân lại với nhau và truyền kết quả vào modelMatrix (Chú ý thứ tự (scale -> rotation -> translate)
+        Matrix.multiplyMM(modelMatrix, 0, translateMatrix, 0, rotationMatrix, 0)
+
         // Set giá trị cho modelMatrix
         GLES32.glUniformMatrix4fv(0, 1, false, modelMatrix, 0)
 
