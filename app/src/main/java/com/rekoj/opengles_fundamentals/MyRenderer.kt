@@ -50,6 +50,8 @@ class MyRenderer(private val context: Context) : Renderer {
 
     // Mảng để lưu trữ ma trận chiếu
     private val projectionMatrix = FloatArray(16)
+    // Tương tự với ma trận setup camera
+    private val viewMatrix = FloatArray(16)
     // Tương tự với ma trận biến đổi đối tượng
     private val modelMatrix = FloatArray(16)
     private val rotationMatrix = FloatArray(16)
@@ -154,13 +156,29 @@ class MyRenderer(private val context: Context) : Renderer {
         // Tính tỷ lệ màn hình
         val aspectRatio = if (width > height) width.toFloat() / height else height.toFloat() / width
 
+        // eyeX, eyeY, eyeZ: Vị trí của camera
+        // centerX, centerY, centerZ: Hướng camera nhìn vào
+        // upX, upY, upZ: Xác định đâu là trục hướng lên của camera
+        Matrix.setLookAtM(viewMatrix, 0,
+            0f, 0f, -3f,
+            0f, 0f, 0f,
+            0f, 1f, 0f)
+        GLES32.glUniformMatrix4fv(1, 1, false, viewMatrix, 0)
+
         // Tạo ma trận chiếu trực giao
         // Tùy vào orientation hiện tại của màn hình, đặt chiều ngắn hơn trong phạm vi [-1, 1] và chiều còn lại trong phạm vi [-aspectRatio, aspectRatio]
-        if (width > height) {
-            Matrix.orthoM(projectionMatrix, 0, -aspectRatio, aspectRatio, -1f, 1f, -2f, 2f)
-        } else {
-            Matrix.orthoM(projectionMatrix, 0, -1f, 1f, -aspectRatio, aspectRatio, -2f, 2f)
-        }
+//        if (width > height) {
+//            Matrix.orthoM(projectionMatrix, 0, -aspectRatio, aspectRatio, -1f, 1f, -2f, 2f)
+//        } else {
+//            Matrix.orthoM(projectionMatrix, 0, -1f, 1f, -aspectRatio, aspectRatio, -2f, 2f)
+//        }
+
+        // fovy: Phạm vi nhìn thấy theo chiều dọc (tính bằng độ)
+        // aspect: Tỉ lệ chiều rộng / chiều cao
+        // zNear: Khoảng cách từ camera đến mặt phẳng gần
+        // zFar: Khoảng cách từ camera đến mặt phẳng xa
+        Matrix.perspectiveM(projectionMatrix, 0, 45f, 1/aspectRatio, 0.1f, 10f)
+
         // Để lấy ra location của uniform hoặc attribute mà ko cần set layout trong shader, glGet....Location(tên attribute hoặc uniform)
         val uniformLocation = GLES32.glGetUniformLocation(program, "projectionMatrix")
         // Gán giá trị ma trận chiếu cho uniform projectionMatrix
@@ -204,7 +222,7 @@ class MyRenderer(private val context: Context) : Renderer {
 
         // Tương tự thêm ma trận dịch chuyển
         Matrix.setIdentityM(translateMatrix, 0)
-        Matrix.translateM(translateMatrix, 0, 0f, 0f, timeElapsed)
+        Matrix.translateM(translateMatrix, 0, 0f, 0f, timeElapsed * 3f)
 
         // Nhân lại với nhau và truyền kết quả vào modelMatrix (Chú ý thứ tự (scale -> rotation -> translate)
         Matrix.multiplyMM(modelMatrix, 0, translateMatrix, 0, rotationMatrix, 0)
